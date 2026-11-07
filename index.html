@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#080f25">
+<meta name="description" content="SPACE GAMES - 우주 미니게임 8종">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SPACE GAMES">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<title>SPACE GAMES 3.0</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);background:#080f25;color:white;font-family:system-ui,sans-serif;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+#game{max-width:600px;margin:auto;padding:12px}
+.panel{background:#121e3d;border:1px solid #30436d;border-radius:14px;padding:12px;margin-bottom:12px}
+button,select{background:#1c3058;touch-action:manipulation;border:1px solid #405b8c;color:white;border-radius:11px;padding:11px;font-weight:bold;cursor:pointer}
+button:active{background:#4265a5}
+.primary{background:#2859a9}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.gamebtn{text-align:left;min-height:75px}
+.gamebtn span{display:block;font-size:22px}
+.muted{color:#aabbdc;font-size:12px}
+.hidden{display:none!important}
+canvas{width:100%;aspect-ratio:4/5;display:block;background:#050b1c;border-radius:14px;touch-action:none;user-select:none;-webkit-user-select:none}
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.controls button{min-height:56px;font-size:19px}
+.bar{height:11px;background:#263757;border-radius:20px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,#38c9ed,#f5e45e);transition:width .12s}
+.scoreRow{display:flex;justify-content:space-between;padding:8px 2px;border-bottom:1px solid #30436d;font-size:13px}
+</style>
+</head>
+<body>
+<div id="game">
+<div class="flex" style="display:flex;justify-content:space-between;align-items:center">
+<div><h2>🚀 SPACE GAMES</h2><small>VERSION 3.0 · FEVER & CHALLENGE</small></div>
+<button id="boardOpen">🏆 점수판</button>
+</div>
+
+<div id="home30" class="panel" style="text-align:center;padding:35px 12px">
+<div style="font-size:60px">🌌</div>
+<h1>SPACE GAMES</h1>
+<p>YOUR SPACE ADVENTURE STARTS HERE</p>
+<button id="start30" class="primary" style="width:100%">게임 시작 ▶</button>
+</div>
+
+<div id="board30" class="panel hidden">
+<h3>🏆 나의 점수판</h3>
+<div id="boardRows"></div>
+<p>전체 누적 점수: <b id="totalScore">0</b></p>
+<button id="resetBoard">기록 초기화</button>
+<button id="boardClose">닫기</button>
+</div>
+
+<div id="menu30" class="panel hidden">
+<h3>게임 선택</h3>
+<div class="grid">
+<button class="gamebtn" data-g="dodge"><span>☄️</span>STAR DODGE<small class="muted">운석 피하고 에너지 모으기</small></button>
+<button class="gamebtn" data-g="runner"><span>🚙</span>MARS RUNNER<small class="muted">점점 어려워지는 장애물</small></button>
+<button class="gamebtn" data-g="blaster"><span>🚀</span>ASTEROID BLASTER<small class="muted">거대 운석 파괴</small></button>
+<button class="gamebtn" data-g="catch"><span>🌟</span>ORBIT CATCH<small class="muted">별 모으기와 피버 타임</small></button>
+<button class="gamebtn" data-g="memory"><span>🪐</span>PLANET MEMORY<small class="muted">AI와 기억력 대결</small></button>
+<button class="gamebtn" data-g="invaders"><span>👾</span>ALIEN INVADERS<small class="muted">외계인 격퇴</small></button>
+<button class="gamebtn" data-g="hop"><span>🌕</span>MOON HOP<small class="muted">발판 점프</small></button>
+<button class="gamebtn" data-g="math"><span>🧠</span>SPACE MATH<small class="muted">우주 수학 퀴즈</small></button>
+</div>
+<button id="homeBack30" style="width:100%;margin-top:12px">← 처음 화면</button>
+</div>
+
+<div id="play30" class="hidden">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+<button id="back30">← 선택</button>
+<b id="title30">GAME</b>
+<b id="score30">0점</b>
+</div>
+
+<div id="feverBox" class="panel hidden">
+<div style="display:flex;justify-content:space-between">
+<b>⚡ ENERGY GAUGE</b><b id="gaugeText">0 / 100</b>
+</div>
+<div class="bar"><div id="gaugeFill" class="fill" style="width:0%"></div></div>
+<div id="feverText" class="muted">에너지를 모아 피버 타임을 발동시켜!</div>
+</div>
+
+<canvas id="canvas30" width="480" height="600"></canvas>
+<p id="hint30" class="muted" style="text-align:center"></p>
+
+<div id="memoryPanel" class="panel hidden">
+<b>AI 대결 난이도</b>
+<select id="difficulty30" style="width:100%;margin-top:8px">
+<option value="0">매우 쉬움</option>
+<option value="1">쉬움</option>
+<option value="2" selected>보통</option>
+<option value="3">어려움</option>
+<option value="4">매우 어려움</option>
+<option value="5">전문가</option>
+</select>
+<p id="memoryStatus">내 차례야!</p>
+<div style="display:flex;justify-content:space-between">
+<span>나: <b id="humanPairs">0</b>쌍</span>
+<span>AI: <b id="botPairs">0</b>쌍</span>
+</div>
+</div>
+
+<div id="mathChoices" class="grid hidden"></div>
+
+<div class="controls" id="controls30">
+<button id="left30">◀</button>
+<button id="action30" class="primary">점프 / 발사</button>
+<button id="right30">▶</button>
+</div>
+<button id="restart30" class="primary" style="width:100%;margin-top:10px">다시 시작</button>
+</div>
+</div>
+
+<script>
+(()=>{
+const root=document.getElementById('game');
+const $=id=>document.getElementById(id);
+const c=$('canvas30'),ctx=c.getContext('2d');
+const W=480,H=600;
+
+const names={
+dodge:'STAR DODGE',
+runner:'MARS RUNNER',
+blaster:'ASTEROID BLASTER',
+catch:'ORBIT CATCH',
+memory:'PLANET MEMORY',
+invaders:'ALIEN INVADERS',
+hop:'MOON HOP',
+math:'SPACE MATH'
+};
+
+let records=readBoard();
+let g='',raf=0,frame=0,score=0,over=false;
+let L=false,R=false,p={};
+let rocks=[],items=[],shots=[],enemyShots=[],platforms=[];
+let timer=0,spawn=0,energy=0,fever=0,giant=null;
+let answer=0,question='',choices=[],cards=[],picked=[];
+let botPairs=0,humanPairs=0,turn='human';
+let difficulty=2,botMemory=[],memoryBusy=false;
+let runnerSpeed=5;
+
+function readBoard(){
+try{return JSON.parse(localStorage.getItem('spacegames_record_v3'))||{total:0,games:{}}}
+catch(e){return {total:0,games:{}}}
+}
+function saveBoard(){
+try{localStorage.setItem('spacegames_record_v3',JSON.stringify(records))}
+catch(e){}
+}
+function record(){
+if(!records.games[g])records.games[g]={best:0,plays:0,total:0};
+let r=records.games[g];
+r.best=Math.max(r.best,score);
+r.total+=score;
+r.plays++;
+records.total=(records.total||0)+score;
+saveBoard();
+}
+function showBoard(){
+let rows=$('boardRows');
+rows.innerHTML='';
+Object.keys(names).forEach(k=>{
+let r=records.games[k]||{best:0,plays:0,total:0};
+let el=document.createElement('div');
+el.className='scoreRow';
+el.textContent=names[k]+' | 최고 '+r.best+'점 · '+r.plays+'회';
+rows.appendChild(el);
+});
+$('totalScore').textContent=(records.total||0)+'점';
+$('board30').classList.remove('hidden');
+$('home30').classList.add('hidden');
+$('menu30').classList.add('hidden');
+$('play30').classList.add('hidden');
+}
+function txt(t,x,y,s=24,col='white'){
+ctx.fillStyle=col;
+ctx.font=`bold ${s}px system-ui`;
+ctx.textAlign='center';
+ctx.fillText(t,x,y);
+}
+function rect(x,y,w,h,col){
+ctx.fillStyle=col;
+ctx.fillRect(x,y,w,h);
+}
+function circ(x,y,r,col){
+ctx.fillStyle=col;
+ctx.beginPath();
+ctx.arc(x,y,r,0,Math.PI*2);
+ctx.fill();
+}
+function bg(){
+rect(0,0,W,H,'#050b1c');
+for(let i=0;i<65;i++)
+circ((i*79+23)%W,(i*131+frame*.35)%H,1.5,'#b5c9ee');
+}
+function hit(a,b){
+return a.x<b.x+b.w&&a.x+a.w>b.x&&
+a.y<b.y+b.h&&a.y+a.h>b.y;
+}
+function hud(){
+$('score30').textContent=score+'점';
+if(g==='dodge'||g==='catch'){
+$('gaugeText').textContent=energy+' / 100';
+$('gaugeFill').style.width=energy+'%';
+$('feverText').textContent=fever>0?
+'🔥 FEVER TIME! 보너스 아이템 획득 중':
+'에너지를 모아 피버 타임을 발동시켜!';
+}
+}
+function end(msg='게임 종료!'){
+if(over)return;
+over=true;
+record();
+$('hint30').textContent=msg+' 최종 점수: '+score+'점 · 점수판에 기록했어!';
+}
+function ship(x,y){
+ctx.save();
+ctx.translate(x+20,y+20);
+ctx.fillStyle='#ff9d35';
+ctx.beginPath();
+ctx.moveTo(-8,13);ctx.lineTo(0,31);ctx.lineTo(8,13);ctx.fill();
+ctx.fillStyle='#3478c9';
+ctx.beginPath();
+ctx.moveTo(-8,0);ctx.lineTo(-25,18);ctx.lineTo(-9,14);ctx.fill();
+ctx.beginPath();
+ctx.moveTo(8,0);ctx.lineTo(25,18);ctx.lineTo(9,14);ctx.fill();
+ctx.fillStyle='#dce8f5';
+ctx.beginPath();
+ctx.moveTo(0,-25);ctx.lineTo(12,14);
+ctx.lineTo(0,10);ctx.lineTo(-12,14);
+ctx.closePath();ctx.fill();
+ctx.strokeStyle='#7996b9';ctx.stroke();
+ctx.fillStyle='#43d9ff';
+ctx.beginPath();ctx.ellipse(0,-7,5,9,0,0,Math.PI*2);ctx.fill();
+ctx.restore();
+}
+function rover(x,y){
+rect(x+2,y+13,38,17,'#d9953d');
+ctx.fillStyle='#f3bd65';
+ctx.beginPath();
+ctx.moveTo(x+23,y+13);ctx.lineTo(x+31,y+3);
+ctx.lineTo(x+40,y+13);ctx.fill();
+ctx.fillStyle='#55c9ed';
+ctx.beginPath();
+ctx.moveTo(x+27,y+12);ctx.lineTo(x+32,y+6);
+ctx.lineTo(x+36,y+12);ctx.fill();
+circ(x+10,y+31,7,'#222b39');
+circ(x+33,y+31,7,'#222b39');
+circ(x+10,y+31,3,'#bac8d5');
+circ(x+33,y+31,3,'#bac8d5');
+}
+function addEnergy(n){
+if(fever>0){
+score+=n;
+return;
+}
+energy=Math.min(100,energy+n);
+if(energy>=100){
+energy=0;
+fever=60*5;
+$('hint30').textContent='🔥 FEVER TIME! 보너스가 쏟아진다!';
+}
+}
+function rock(){
+rocks.push({
+x:Math.random()*430,y:-45,
+w:32+Math.random()*20,
+h:32+Math.random()*20,
+s:3+Math.random()*2
+});
+}
+function newQ(){
+let a=1+Math.floor(Math.random()*12);
+let b=1+Math.floor(Math.random()*9);
+let op=Math.random()<.5?'+':'×';
+answer=op==='+'?a+b:a*b;
+question=`${a} ${op} ${b} = ?`;
+choices=[answer,answer+2,Math.max(0,answer-3),answer+5]
+.sort(()=>Math.random()-.5);
+$('mathChoices').innerHTML='';
+choices.forEach(v=>{
+let b=document.createElement('button');
+b.textContent=v;
+b.onclick=()=>{
+if(over)return;
+if(v===answer){
+score+=10;
+$('hint30').textContent='정답! +10점';
+newQ();
+}else{
+$('hint30').textContent='틀렸어! -2점';
+score=Math.max(0,score-2);
+}
+hud();
+};
+$('mathChoices').appendChild(b);
+});
+}
+function start(gm){
+g=gm;frame=0;score=0;over=false;
+rocks=[];items=[];shots=[];enemyShots=[];
+platforms=[];spawn=0;timer=0;energy=0;
+fever=0;giant=null;L=R=false;
+p={x:220,y:490,w:40,h:40,vy:0};
+botPairs=0;humanPairs=0;botMemory=[];
+picked=[];turn='human';memoryBusy=false;
+
+if(g==='dodge')spawn=40;
+if(g==='runner'){p.y=500;spawn=55;runnerSpeed=5}
+if(g==='blaster')spawn=35;
+if(g==='catch'){timer=3600;spawn=15}
+if(g==='invaders'){
+timer=5400;
+for(let i=0;i<10;i++)
+rocks.push({x:35+(i%5)*85,y:65+Math.floor(i/5)*55,w:35,h:30});
+}
+if(g==='hop'){
+timer=2700;p.y=500;p.vy=-10;
+for(let i=0;i<9;i++)
+platforms.push({x:Math.random()*370,y:550-i*75,w:95,h:14});
+}
+if(g==='memory'){
+difficulty=Number($('difficulty30').value);
+let a=['🌍','🌙','🪐','☀️','🌟','☄️','🚀','👾'];
+cards=[...a,...a].sort(()=>Math.random()-.5)
+.map((v,i)=>({v,x:24+(i%4)*110,y:95+Math.floor(i/4)*112,done:false,show:false}));
+$('memoryPanel').classList.remove('hidden');
+$('controls30').classList.add('hidden');
+$('hint30').textContent='내 차례야! 카드를 두 장 골라 봐.';
+$('memoryStatus').textContent='내 차례야!';
+}else{
+$('memoryPanel').classList.add('hidden');
+$('controls30').classList.remove('hidden');
+}
+if(g==='math'){
+timer=3600;newQ();
+$('mathChoices').classList.remove('hidden');
+}else $('mathChoices').classList.add('hidden');
+
+$('feverBox').classList.toggle('hidden',!['dodge','catch'].includes(g));
+$('title30').textContent=names[g];
+$('hint30').textContent='게임 시작!';
+$('play30').classList.remove('hidden');
+$('menu30').classList.add('hidden');
+$('home30').classList.add('hidden');
+cancelAnimationFrame(raf);
+hud();loop();
+}
+function move(){
+if(L)p.x-=5;
+if(R)p.x+=5;
+p.x=Math.max(0,Math.min(W-p.w,p.x));
+}
+function update(){
+frame++;move();
+
+if(g==='dodge'){
+if(--spawn<=0){
+rock();spawn=Math.max(17,38-Math.floor(frame/900));
+}
+if(frame%95===0)
+items.push({x:20+Math.random()*430,y:-20,w:24,h:24,s:3,kind:'energy'});
+if(fever>0&&frame%8===0)
+items.push({x:Math.random()*450,y:-20,w:26,h:26,s:5,kind:'bonus'});
+rocks.forEach(o=>o.y+=o.s);
+items.forEach(o=>o.y+=o.s);
+for(let o of rocks)
+if(hit({x:p.x+5,y:p.y+5,w:30,h:30},o))
+end('운석에 부딪혔어!');
+items=items.filter(o=>{
+if(hit(p,o)){
+if(o.kind==='energy')addEnergy(15);
+else score+=10;
+return false;
+}
+return o.y<H;
+});
+rocks=rocks.filter(o=>o.y<H+40);
+if(fever>0){
+fever--;
+if(fever===0)
+$('hint30').textContent='피버 타임 종료!';
+}
+}
+
+if(g==='runner'){
+runnerSpeed=Math.min(12,5+Math.floor(frame/900)*.8);
+if(--spawn<=0){
+let level=Math.floor(frame/700);
+let kind=Math.min(3,Math.floor(Math.random()*(1+Math.min(3,level))));
+rocks.push({
+x:W,
+y:kind===0?498:kind===1?485:kind===2?470:510,
+w:kind===3?65:kind===2?42:35,
+h:kind===0?48:kind===1?62:kind===2?75:35,
+kind
+});
+spawn=Math.max(34,82-Math.floor(frame/500)*3);
+}
+p.vy+=.55;p.y+=p.vy;
+if(p.y>500){p.y=500;p.vy=0}
+rocks.forEach(o=>o.x-=runnerSpeed);
+rocks=rocks.filter(o=>{
+if(hit({x:p.x+4,y:p.y+5,w:32,h:38},o)){
+end('장애물에 부딪혔어!');
+return false;
+}
+if(o.x<-80){score++;return false}
+return true;
+});
+}
+
+if(g==='blaster'){
+if(--spawn<=0){rock();spawn=35}
+if(!giant&&frame>0&&frame%850===0)
+giant={x:150,y:-145,w:180,h:150,hp:8,max:8,s:1.15};
+rocks.forEach(o=>o.y+=o.s);
+shots.forEach(s=>s.y-=10);
+shots=shots.filter(s=>s.y>-20);
+for(let i=rocks.length-1;i>=0;i--){
+let o=rocks[i];
+let j=shots.findIndex(s=>
+Math.abs(s.x-o.x-o.w/2)<28&&Math.abs(s.y-o.y)<35);
+if(j>=0){
+rocks.splice(i,1);shots.splice(j,1);score+=10;
+}else if(hit({x:p.x+5,y:p.y+5,w:30,h:30},o))
+end('운석에 부딪혔어!');
+}
+if(giant){
+giant.y+=giant.s;
+for(let i=shots.length-1;i>=0;i--){
+let s=shots[i];
+if(s.x>giant.x&&s.x<giant.x+giant.w&&
+s.y>giant.y&&s.y<giant.y+giant.h){
+giant.hp--;shots.splice(i,1);
+if(giant.hp<=0){
+score+=100;giant=null;
+$('hint30').textContent='거대 운석 파괴 성공! +100점';
+}
+}
+}
+if(giant&&giant.y+giant.h>p.y+10)
+end('거대 운석이 길을 막았어!');
+}
+rocks=rocks.filter(o=>o.y<H+50);
+}
+
+if(g==='catch'){
+timer--;
+if(--spawn<=0){
+items.push({x:Math.random()*445,y:-30,w:28,h:28,s:3+Math.random()*2,kind:'star'});
+spawn=24;
+}
+if(fever>0&&frame%7===0)
+items.push({x:Math.random()*445,y:-25,w:28,h:28,s:5,kind:'bonus'});
+items.forEach(o=>o.y+=o.s);
+items=items.filter(o=>{
+if(hit({x:p.x,y:p.y+10,w:p.w,h:25},o)){
+if(o.kind==='star')addEnergy(15);
+else score+=10;
+return false;
+}
+return o.y<H;
+});
+if(fever>0){
+fever--;
+if(fever===0)$('hint30').textContent='피버 타임 종료!';
+}
+if(timer<=0)end('시간 종료!');
+}
+
+if(g==='invaders'){
+timer--;
+let edge=false;
+rocks.forEach(o=>{
+o.x+=Math.sin(frame/80)*.35+1.1;
+if(o.x>W-40||o.x<5)edge=true;
+});
+if(edge)rocks.forEach(o=>o.y+=18);
+if(frame%55===0&&rocks.length){
+let o=rocks[Math.floor(Math.random()*rocks.length)];
+enemyShots.push({x:o.x+17,y:o.y+30});
+}
+shots.forEach(s=>s.y-=9);
+enemyShots.forEach(s=>s.y+=5);
+shots=shots.filter(s=>s.y>-10);
+enemyShots=enemyShots.filter(s=>s.y<H);
+for(let i=rocks.length-1;i>=0;i--){
+let o=rocks[i];
+let j=shots.findIndex(s=>Math.abs(s.x-o.x-17)<22&&Math.abs(s.y-o.y)<25);
+if(j>=0){rocks.splice(i,1);shots.splice(j,1);score+=10}
+}
+for(let s of enemyShots)
+if(hit({x:p.x+5,y:p.y+5,w:30,h:30},
+{x:s.x-5,y:s.y-8,w:10,h:18}))
+end('외계인의 탄환에 맞았어!');
+if(rocks.some(o=>o.y>p.y-30))
+end('외계인이 지상에 도달했어!');
+if(!rocks.length&&!over){
+score+=50;
+for(let i=0;i<10;i++)
+rocks.push({x:35+(i%5)*85,y:55+Math.floor(i/5)*55});
+}
+if(timer<=0)end('시간 종료!');
+}
+
+if(g==='hop'){
+timer--;
+p.vy+=.42;p.y+=p.vy;
+platforms.forEach(q=>{
+if(p.vy>0&&p.x+34>q.x&&p.x+6<q.x+q.w&&
+p.y+38>=q.y&&p.y+38<=q.y+18){
+p.vy=-10;score++;
+}
+});
+if(p.y<245){
+let d=245-p.y;p.y=245;
+platforms.forEach(q=>q.y+=d);
+}
+platforms=platforms.filter(q=>q.y<H+20);
+while(platforms.length<9){
+let top=Math.min(...platforms.map(q=>q.y));
+platforms.push({x:Math.random()*370,y:top-70-Math.random()*20,w:90,h:14});
+}
+if(p.y>H)end('발판에서 떨어졌어!');
+if(timer<=0)end('시간 종료!');
+}
+
+if(g==='math'||g==='memory'){
+timer--;
+if(timer<=0)end('시간 종료!');
+}
+hud();
+}
+
+function draw(){
+bg();
+
+if(g==='dodge'){
+ship(p.x,p.y);
+rocks.forEach(o=>{
+circ(o.x+o.w/2,o.y+o.h/2,o.w/2,'#858d9b');
+circ(o.x+o.w/2-5,o.y+o.h/2-5,4,'#626b79');
+});
+items.forEach(o=>{
+circ(o.x+12,o.y+12,12,o.kind==='bonus'?'#ff70d9':'#ffe65b');
+txt(o.kind==='bonus'?'★':'⚡',o.x+12,o.y+18,14);
+});
+}
+
+if(g==='runner'){
+rect(0,545,W,55,'#9b4c30');
+rover(p.x,p.y);
+rocks.forEach(o=>{
+if(o.kind===0)txt('🪨',o.x+17,o.y+40,35);
+else if(o.kind===1)txt('🪨',o.x+18,o.y+50,43);
+else if(o.kind===2){
+rect(o.x,o.y,o.w,o.h,'#8d664e');
+txt('▲',o.x+21,o.y+35,25,'#e5ba84');
+}else{
+rect(o.x,o.y,o.w,o.h,'#d3a05b');
+}
+});
+txt('속도 '+runnerSpeed.toFixed(1),400,35,17,'#f4d2a0');
+}
+
+if(g==='blaster'){
+ship(p.x,p.y);
+rocks.forEach(o=>txt('☄️',o.x+o.w/2,o.y+o.h,30));
+shots.forEach(s=>rect(s.x-3,s.y,6,18,'#70f4ff'));
+if(giant){
+circ(giant.x+90,giant.y+75,75,'#6b707d');
+circ(giant.x+60,giant.y+55,15,'#555d6d');
+circ(giant.x+120,giant.y+95,20,'#555d6d');
+rect(giant.x,giant.y-18,giant.w,8,'#263757');
+rect(giant.x,giant.y-18,giant.w*giant.hp/giant.max,8,'#ff6d62');
+txt('GIANT ASTEROID',240,giant.y-27,14,'#ffd58b');
+}
+}
+
+if(g==='catch'){
+rect(p.x,p.y+18,p.w,15,'#e9ad54');
+items.forEach(o=>txt(o.kind==='bonus'?'🌟':'⭐',o.x+14,o.y+25,27));
+}
+
+if(g==='invaders'){
+ship(p.x,p.y);
+rocks.forEach(o=>txt('👾',o.x+17,o.y+28,30));
+shots.forEach(s=>rect(s.x-3,s.y,6,16,'#6cf5ff'));
+enemyShots.forEach(s=>rect(s.x-4,s.y,8,18,'#ff637a'));
+}
+
+if(g==='hop'){
+platforms.forEach(q=>rect(q.x,q.y,q.w,q.h,'#61d8bd'));
+txt('🧑‍🚀',p.x+20,p.y+37,34);
+}
+
+if(g==='memory'){
+cards.forEach(o=>{
+rect(o.x,o.y,98,96,o.done?'#17534b':'#1b3261');
+ctx.strokeStyle='#678cc9';
+ctx.strokeRect(o.x,o.y,98,96);
+txt(o.done||o.show?o.v:'?',o.x+49,o.y+60,34);
+});
+}
+
+if(g==='math'){
+txt('SPACE MATH',240,170,30,'#9adfff');
+txt(question,240,255,40);
+}
+
+if(fever>0&&(g==='dodge'||g==='catch')){
+rect(35,65,410,48,'rgba(90,15,95,.8)');
+txt('🔥 FEVER TIME! 🔥',240,98,29,'#ffe86b');
+}
+
+if(over){
+rect(35,240,410,120,'rgba(9,18,43,.94)');
+txt('GAME OVER',240,286,34,'#ffdc7c');
+txt('점수: '+score,240,329,24);
+txt('점수판에 기록했어!',240,350,14,'#c4d4ef');
+}
+}
+
+function loop(){
+if(!document.body.contains(root))return;
+if(!over&&g!=='memory')update();
+else if(!over&&g==='memory'){
+frame++;timer--;
+if(timer<=0)end('시간 종료!');
+}
+draw();
+raf=requestAnimationFrame(loop);
+}
+
+function action(){
+if(over)return;
+if(g==='runner'&&p.y>=499)p.vy=-12;
+if(g==='hop'&&p.vy===0)p.vy=-10;
+if(g==='blaster'||g==='invaders')
+shots.push({x:p.x+20,y:p.y});
+}
+
+function cardTap(e){
+const r=c.getBoundingClientRect();
+const x=(e.clientX-r.left)*W/r.width;
+const y=(e.clientY-r.top)*H/r.height;
+
+if(g==='memory'&&!over&&turn==='human'&&!memoryBusy){
+let o=cards.find(o=>
+x>=o.x&&x<=o.x+98&&y>=o.y&&y<=o.y+96&&
+!o.done&&!o.show
+);
+if(o){
+o.show=true;
+picked.push(o);
+if(picked.length===2){
+memoryBusy=true;
+let pair=picked.slice();
+picked=[];
+setTimeout(()=>resolvePair(pair,'human'),450);
+}
+}
+}
+
+if(['dodge','catch','runner','hop'].includes(g)){
+if(x<W/2)L=true;else R=true;
+setTimeout(()=>{L=false;R=false},150);
+}
+}
+
+function resolvePair(pair,who){
+if(over)return;
+if(pair[0].v===pair[1].v){
+pair.forEach(a=>a.done=true);
+if(who==='human'){
+humanPairs++;score+=20;
+}else botPairs++;
+$('humanPairs').textContent=humanPairs;
+$('botPairs').textContent=botPairs;
+
+if(cards.every(a=>a.done)){
+if(humanPairs>botPairs)end('승리! AI를 이겼어!');
+else if(humanPairs<botPairs)end('AI 승리!');
+else end('무승부!');
+return;
+}
+}else{
+pair.forEach(a=>a.show=false);
+}
+
+if(who==='human'){
+turn='bot';
+$('memoryStatus').textContent='AI가 생각 중...';
+setTimeout(botTurn,650);
+}else{
+turn='human';
+$('memoryStatus').textContent='네 차례야!';
+memoryBusy=false;
+}
+}
+
+function botTurn(){
+if(over)return;
+let candidates=cards.filter(o=>!o.done);
+let first=null,second=null;
+let chance=[.05,.18,.38,.62,.82,.98][difficulty];
+
+let known=botMemory.filter(m=>
+candidates.some(o=>o.x===m.x&&o.y===m.y)
+);
+let pair=null;
+
+for(let i=0;i<known.length&&!pair;i++){
+for(let j=i+1;j<known.length;j++){
+if(known[i].v===known[j].v){
+pair=[known[i],known[j]];
+break;
+}
+}
+}
+
+if(pair&&Math.random()<chance){
+first=candidates.find(o=>o.x===pair[0].x&&o.y===pair[0].y);
+second=candidates.find(o=>o.x===pair[1].x&&o.y===pair[1].y);
+}
+
+if(!first){
+first=candidates[Math.floor(Math.random()*candidates.length)];
+first.show=true;
+remember(first);
+let mates=candidates.filter(o=>o!==first&&o.v===first.v);
+if(mates.length&&Math.random()<chance)second=mates[0];
+}
+
+if(!second){
+let others=candidates.filter(o=>o!==first);
+second=others[Math.floor(Math.random()*others.length)];
+}
+
+first.show=true;second.show=true;
+remember(first);remember(second);
+setTimeout(()=>resolvePair([first,second],'bot'),700);
+}
+
+function remember(o){
+let old=botMemory.find(m=>m.x===o.x&&m.y===o.y);
+if(!old)botMemory.push({x:o.x,y:o.y,v:o.v});
+else old.v=o.v;
+}
+
+c.addEventListener('pointerdown',e=>{
+c.setPointerCapture(e.pointerId);
+cardTap(e);
+});
+
+function hold(id,k){
+let b=$(id);
+b.addEventListener('pointerdown',e=>{
+e.preventDefault();
+if(k==='action')action();
+else if(k==='left')L=true;
+else R=true;
+});
+['pointerup','pointerleave','pointercancel'].forEach(v=>{
+b.addEventListener(v,()=>{
+if(k==='left')L=false;
+if(k==='right')R=false;
+});
+});
+}
+
+hold('left30','left');
+hold('right30','right');
+hold('action30','action');
+
+$('start30').onclick=()=>{
+$('home30').classList.add('hidden');
+$('menu30').classList.remove('hidden');
+};
+$('homeBack30').onclick=()=>{
+$('menu30').classList.add('hidden');
+$('home30').classList.remove('hidden');
+};
+$('boardOpen').onclick=showBoard;
+$('boardClose').onclick=()=>{
+$('board30').classList.add('hidden');
+$('home30').classList.remove('hidden');
+};
+$('resetBoard').onclick=()=>{
+if(confirm('모든 기록을 초기화할까?')){
+records={total:0,games:{}};
+saveBoard();showBoard();
+}
+};
+$('back30').onclick=()=>{
+cancelAnimationFrame(raf);
+$('play30').classList.add('hidden');
+$('memoryPanel').classList.add('hidden');
+$('mathChoices').classList.add('hidden');
+$('menu30').classList.remove('hidden');
+};
+$('restart30').onclick=()=>start(g);
+
+document.querySelectorAll('[data-g]').forEach(b=>{
+b.onclick=()=>start(b.dataset.g);
+});
+
+window.addEventListener('keydown',e=>{
+if(e.key==='ArrowLeft'||e.key==='a')L=true;
+if(e.key==='ArrowRight'||e.key==='d')R=true;
+if(e.key===' '){
+e.preventDefault();
+action();
+}
+});
+window.addEventListener('keyup',e=>{
+if(e.key==='ArrowLeft'||e.key==='a')L=false;
+if(e.key==='ArrowRight'||e.key==='d')R=false;
+});
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => {
+      console.log('오프라인 기능을 등록하지 못했습니다.', err);
+    });
+  });
+}
+</script>
+</body>
+</html>

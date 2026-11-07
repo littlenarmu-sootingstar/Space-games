@@ -1,0 +1,26 @@
+{
+  "name": "SPACE GAMES",
+  "short_name": "SPACE GAMES",
+  "description": "우주 미니게임 8종을 즐겨 보세요!",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080f25",
+  "theme_color": "#080f25",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
